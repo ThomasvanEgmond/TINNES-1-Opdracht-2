@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp moet oppassen</title>
+    <style>
+        body, html {
+            height: 100%; /* Ensure the body and html elements take up the full height of the viewport */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center content horizontally */
+            align-items: center; /* Center content vertically */
+        }
+
+        .my-form {
+            max-width: 400px;
+            width: 80dvw;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            font-family: "Bahnschrift";
+        }
+
+        .my-form input[type="text"],
+        .my-form input[type="password"],
+        .my-form button {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: "Bahnschrift";
+        }
+
+        .my-form button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .my-form button:hover {
+            background-color: #45a049;
+        }
+
+        .scrollable {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse; /* Reverses the order of elements */
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            max-width: 70%;
+            font-family: "Bahnschrift";
+        }
+
+        .they-message {
+            background-color: purple;
+            color: white;
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        #chatter{
+            height: 100dvh;
+            max-width: 600px;
+            width: 90dvw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: 100dvh;
+            margin: auto;
+        }
+
+        #messageContainer {
+            height: 80dvh;
+            max-width: 600px;
+            width: 90dvw;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            overflow-y: auto; /* Enable vertical scrollbar */
+            max-height: 80dvh; /* Adjust height as needed */
+        }
+
+        .my-message {
+            background-color: #4caf50;
+            color: white;
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        #messageInputDiv {
+            margin: 20px;
+            max-width: 600px;
+            width: 90dvw;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Bahnschrift";
+        }
+
+        #messageInputDiv input[type="text"] {
+            font-family: "Bahnschrift";
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        #messageInputDiv button {
+            font-family: "Bahnschrift";
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #messageInputDiv button:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.6/mqtt.min.js" integrity="sha512-7DQZVTk6F8+bPAGxJYTI17fKg3xWIX9xJyXileGVP46JuZXumXYergaMjlagVxm3gt9FX4qpZ+9CEpDMV271yw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+</head>
+<body>
+    <div id="loginDiv" class="my-form">
+        <form class="blablabla" onsubmit="return formSubmitFunction()" action="" id="loginForm" method="post">
+            <div class="container">
+                <input type="text" placeholder="Enter Username" id="uname" required>
+                <input type="password" placeholder="Enter Password" id="psw" required>
+                <button type="submit">Login</button>
+            </div>
+            <div id="wrongLogin" style="display: none;">
+                Wrong username or password
+            </div>
+        </form>
+    </div>
+    <div id="chatter" style="display: none;">
+        <div id="messageInputDiv">
+            WhatsApp moet oppassen
+        </div>
+        <div id="messageContainer" class="scrollable">
+        </div>
+        <div id="messageInputDiv">
+            <form onsubmit="if(document.getElementById(`message`).value != ``){sendMsg(document.getElementById(`message`).value)};
+            messageForm.reset();
+            return false" id="messageForm" action="" method="post">
+                <input type="text" id="message" placeholder="Type your message here" />
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+        
+</body>
+<script>
+    username = "";
+    myMessage = "";
+    connected = false;
+
+    function formSubmitFunction() {
+        connectMQTT();
+        return false;
+    }
+
+    function connectMQTT() {
+        username = `${document.getElementById("uname").value}`;
+        const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8)
+        const host = 'wss://netwerkenbasis.com:8884'
+        const options = {
+            keepalive: 60,
+            clientId: clientId,
+            protocolId: 'MQTT',
+            protocolVersion: 4,
+            clean: true,
+            reconnectPeriod: 1000,
+            connectTimeout: 30 * 1000,
+            username: `${document.getElementById("uname").value}`,
+            password: `${document.getElementById("psw").value}`,
+        }
+        console.log('Connecting mqtt client')
+        client = mqtt.connect(host, options)
+        client.on('error', (err) => {
+            console.log('Connection error: ', err)
+            client.end()
+            loginForm.reset()
+            // Show div with error message
+            document.getElementById('wrongLogin').style.display = '';
+        })
+        client.on('reconnect', () => {
+            console.log('Reconnecting...')
+        })
+        client.on('connect', () => {
+            // Subscribe to all topics below topic `test`
+            client.subscribe('chat/message', { qos: 0 })
+            // Hide login form and show message div's
+            document.getElementById('loginDiv').style.display = 'none';
+            document.getElementById('chatter').style.display = '';
+            // document.getElementById('messageContainer').style.display = '';
+        })
+
+        client.on('message', (topic, message, packet) => {
+            if (connected){
+                const messageBox = document.createElement("div")
+                messageBox.classList.add("message");
+                // A different style is applied to the message that are sent by the current user
+                console.log(`Received: ${message.toString()}`)
+                messageBox.textContent = `${message.toString()}`
+                if (myMessage == message){
+                    messageBox.classList.add("my-message");
+                    myMessage = "";}
+                else messageBox.classList.add("they-message");
+                document.getElementById("messageContainer").appendChild(messageBox)
+            }
+            else connected = true
+        })
+    }
+
+    function sendMsg(message) {
+        client.publish(`chat/message`, message, { qos: 0, retain: false })
+        console.log(`Send: ${message}`)
+        myMessage = message;
+    }
+</script>
+</html>

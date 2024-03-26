@@ -1,0 +1,13 @@
+services:
+  Nginx:
+    image: nginx
+    container_name: "Nginx-TINNES-1"
+    volumes:
+      - ./config:/etc/nginx/conf.d
+      - ./web:/usr/share/nginx/html
+      # - ./passwd:/mosquitto/passwd
+      - ./certs:/usr/share/nginx/certs
+      # - ./log:/mosquitto/log
+    ports:
+      - "80:443"
+      - "443:443"
